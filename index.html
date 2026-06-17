@@ -1,0 +1,744 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chess Practice</title>
+    <style>
+      :root {
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        color: #18201b;
+        background: #edf0e8;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-width: 320px;
+        min-height: 100vh;
+      }
+
+      button {
+        font: inherit;
+      }
+
+      .app {
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: clamp(16px, 3vw, 36px);
+        background:
+          linear-gradient(135deg, rgba(23, 44, 36, 0.08), transparent 36%),
+          #edf0e8;
+      }
+
+      .game-shell {
+        width: min(1180px, 100%);
+        display: grid;
+        grid-template-columns: minmax(250px, 320px) minmax(0, 1fr);
+        gap: clamp(18px, 3vw, 34px);
+        align-items: stretch;
+      }
+
+      .side-panel {
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+        min-height: 0;
+        padding: 4px 0;
+      }
+
+      .brand-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .brand-mark {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        display: grid;
+        place-items: center;
+        background: #386554;
+        color: #fff8e7;
+        font-size: 1.45rem;
+        font-family: Georgia, "Times New Roman", serif;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(2rem, 5vw, 3.85rem);
+        line-height: 0.95;
+        letter-spacing: 0;
+      }
+
+      .status-block {
+        border-left: 4px solid #386554;
+        padding-left: 14px;
+      }
+
+      .status {
+        margin: 0 0 6px;
+        font-weight: 800;
+        font-size: 1.1rem;
+      }
+
+      .message {
+        margin: 0;
+        color: #52635b;
+      }
+
+      .toolbar {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+      }
+
+      .toolbar button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        min-height: 44px;
+        border: 1px solid #c9d0c5;
+        border-radius: 8px;
+        background: #f9faf5;
+        color: #1c2a23;
+        cursor: pointer;
+      }
+
+      .toolbar button:hover {
+        border-color: #386554;
+        background: #ffffff;
+      }
+
+      .side-choice {
+        display: grid;
+        gap: 8px;
+      }
+
+      .side-choice label {
+        font-size: 0.86rem;
+        font-weight: 800;
+        color: #52635b;
+      }
+
+      .side-choice select {
+        width: 100%;
+        min-height: 44px;
+        border: 1px solid #c9d0c5;
+        border-radius: 8px;
+        padding: 0 12px;
+        background: #f9faf5;
+        color: #1c2a23;
+        font: inherit;
+      }
+
+      .captured {
+        min-height: 48px;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 4px;
+        padding: 10px 0;
+        font-size: 1.8rem;
+        line-height: 1;
+      }
+
+      .empty {
+        font-size: 0.95rem;
+        color: #708178;
+      }
+
+      .move-list {
+        min-height: 190px;
+        max-height: 34vh;
+        overflow: auto;
+        margin: 0;
+        padding: 12px;
+        list-style: none;
+        border: 1px solid #d0d6ca;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.52);
+      }
+
+      .move-list:empty::before {
+        content: "Moves will appear here";
+        color: #708178;
+      }
+
+      .move-list li {
+        display: grid;
+        grid-template-columns: 52px 1fr;
+        gap: 8px;
+        padding: 7px 4px;
+        border-bottom: 1px solid #e1e5dd;
+      }
+
+      .move-list li:last-child {
+        border-bottom: 0;
+      }
+
+      .move-list span {
+        color: #708178;
+      }
+
+      .board-wrap {
+        display: grid;
+        place-items: center;
+        min-width: 0;
+      }
+
+      .board {
+        width: min(74vh, 100%);
+        aspect-ratio: 1;
+        display: grid;
+        grid-template-columns: repeat(8, minmax(0, 1fr));
+        grid-template-rows: repeat(8, minmax(0, 1fr));
+        border: clamp(8px, 1.6vw, 16px) solid #1e2b24;
+        box-shadow: 0 28px 70px rgba(21, 31, 26, 0.2);
+        background: #1e2b24;
+      }
+
+      .square {
+        position: relative;
+        display: grid;
+        place-items: center;
+        border: 0;
+        padding: 0;
+        cursor: pointer;
+        overflow: hidden;
+      }
+
+      .square.light {
+        background: #dce6cf;
+      }
+
+      .square.dark {
+        background: #6f8c68;
+      }
+
+      .square:hover,
+      .square.selected {
+        outline: 4px solid #efb85f;
+        outline-offset: -4px;
+        z-index: 1;
+      }
+
+      .square.target::after {
+        content: "";
+        width: 28%;
+        aspect-ratio: 1;
+        border-radius: 999px;
+        background: rgba(30, 43, 36, 0.32);
+        position: absolute;
+      }
+
+      .piece {
+        position: relative;
+        z-index: 2;
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: clamp(2rem, 7vw, 5.7rem);
+        line-height: 1;
+        filter: drop-shadow(0 3px 1px rgba(0, 0, 0, 0.22));
+        user-select: none;
+      }
+
+      .white-piece {
+        color: #fff8e7;
+      }
+
+      .black-piece {
+        color: #151515;
+      }
+
+      .coord {
+        position: absolute;
+        left: 6px;
+        bottom: 5px;
+        font-size: 0.72rem;
+        font-weight: 800;
+        color: rgba(24, 32, 27, 0.48);
+      }
+
+      @media (max-width: 840px) {
+        .app {
+          align-items: start;
+        }
+
+        .game-shell {
+          grid-template-columns: 1fr;
+        }
+
+        .side-panel {
+          order: 2;
+        }
+
+        .board-wrap {
+          order: 1;
+        }
+
+        .board {
+          width: min(100%, 88vh);
+        }
+
+        h1 {
+          font-size: 2.15rem;
+        }
+
+        .move-list {
+          max-height: 210px;
+        }
+      }
+
+      @media (max-width: 480px) {
+        .toolbar {
+          grid-template-columns: 1fr;
+        }
+
+        .toolbar button {
+          justify-content: flex-start;
+          padding-inline: 14px;
+        }
+
+        .coord {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="app">
+      <section class="game-shell" aria-label="Chess game">
+        <aside class="side-panel">
+          <div class="brand-row">
+            <div class="brand-mark" aria-hidden="true">♞</div>
+            <h1>Chess Practice</h1>
+          </div>
+          <div class="status-block">
+            <p class="status" id="status">White to move</p>
+            <p class="message" id="message">Choose a white piece to begin.</p>
+          </div>
+          <div class="toolbar" aria-label="Game controls">
+            <button type="button" id="new-game" title="New game">↺ <span>New</span></button>
+            <button type="button" id="undo" title="Undo last move">↶ <span>Undo</span></button>
+            <button type="button" id="flip" title="Flip board">⟳ <span>Flip</span></button>
+          </div>
+          <div class="side-choice">
+            <label for="side-select">Play as</label>
+            <select id="side-select">
+              <option value="w">White vs Computer</option>
+              <option value="b">Black vs Computer</option>
+              <option value="both">Both sides</option>
+            </select>
+          </div>
+          <div class="captured" id="captured" aria-label="Captured pieces"><span class="empty">No captures</span></div>
+          <ol class="move-list" id="move-list" aria-label="Move history"></ol>
+        </aside>
+        <div class="board-wrap">
+          <div class="board" id="board" role="grid" aria-label="Chess board"></div>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      const files = ["a", "b", "c", "d", "e", "f", "g", "h"];
+      const glyphs = {
+        wp: "♙", wn: "♘", wb: "♗", wr: "♖", wq: "♕", wk: "♔",
+        bp: "♟", bn: "♞", bb: "♝", br: "♜", bq: "♛", bk: "♚"
+      };
+      const names = { p: "", n: "N", b: "B", r: "R", q: "Q", k: "K" };
+      const boardEl = document.querySelector("#board");
+      const statusEl = document.querySelector("#status");
+      const messageEl = document.querySelector("#message");
+      const capturedEl = document.querySelector("#captured");
+      const moveListEl = document.querySelector("#move-list");
+      const sideSelectEl = document.querySelector("#side-select");
+
+      let board;
+      let turn;
+      let selected = null;
+      let flipped = false;
+      let castling;
+      let enPassant = null;
+      let history = [];
+      let snapshots = [];
+      let playerSide = "w";
+      let computerThinking = false;
+      const pieceValues = { p: 100, n: 320, b: 330, r: 500, q: 900, k: 20000 };
+
+      function startPosition() {
+        board = new Map();
+        for (const file of files) {
+          board.set(`${file}2`, { color: "w", type: "p" });
+          board.set(`${file}7`, { color: "b", type: "p" });
+        }
+        const backRank = ["r", "n", "b", "q", "k", "b", "n", "r"];
+        backRank.forEach((type, index) => {
+          board.set(`${files[index]}1`, { color: "w", type });
+          board.set(`${files[index]}8`, { color: "b", type });
+        });
+        turn = "w";
+        selected = null;
+        castling = { w: { k: true, q: true }, b: { k: true, q: true } };
+        enPassant = null;
+        history = [];
+        snapshots = [];
+        render("New game ready.");
+        maybeComputerMove();
+      }
+
+      function cloneBoard(source = board) {
+        return new Map([...source.entries()].map(([square, piece]) => [square, { ...piece }]));
+      }
+
+      function snapshot() {
+        return {
+          board: cloneBoard(),
+          turn,
+          castling: JSON.parse(JSON.stringify(castling)),
+          enPassant,
+          history: history.map((move) => ({ ...move }))
+        };
+      }
+
+      function restore(state) {
+        board = cloneBoard(state.board);
+        turn = state.turn;
+        castling = JSON.parse(JSON.stringify(state.castling));
+        enPassant = state.enPassant;
+        history = state.history.map((move) => ({ ...move }));
+        selected = null;
+        render("Move undone.");
+        maybeComputerMove();
+      }
+
+      function square(fileIndex, rank) {
+        if (fileIndex < 0 || fileIndex > 7 || rank < 1 || rank > 8) return null;
+        return `${files[fileIndex]}${rank}`;
+      }
+
+      function coords(squareName) {
+        return { file: files.indexOf(squareName[0]), rank: Number(squareName[1]) };
+      }
+
+      function enemy(color) {
+        return color === "w" ? "b" : "w";
+      }
+
+      function moveListFor(squareName, attacksOnly = false) {
+        const piece = board.get(squareName);
+        if (!piece) return [];
+        const { file, rank } = coords(squareName);
+        const moves = [];
+        const add = (to, extras = {}) => {
+          if (!to) return;
+          const target = board.get(to);
+          if (!target || target.color !== piece.color) moves.push({ from: squareName, to, piece: piece.type, color: piece.color, capture: target?.type || null, ...extras });
+        };
+        const ray = (df, dr) => {
+          let f = file + df;
+          let r = rank + dr;
+          while (true) {
+            const to = square(f, r);
+            if (!to) break;
+            const target = board.get(to);
+            if (!target) add(to);
+            if (target) {
+              if (target.color !== piece.color) add(to);
+              break;
+            }
+            f += df;
+            r += dr;
+          }
+        };
+
+        if (piece.type === "p") {
+          const dir = piece.color === "w" ? 1 : -1;
+          const startRank = piece.color === "w" ? 2 : 7;
+          const promoteRank = piece.color === "w" ? 8 : 1;
+          for (const df of [-1, 1]) {
+            const to = square(file + df, rank + dir);
+            if (!to) continue;
+            const target = board.get(to);
+            if (attacksOnly || (target && target.color !== piece.color)) add(to, { promotion: Number(to[1]) === promoteRank });
+            if (!attacksOnly && to === enPassant) add(to, { enPassant: true, capture: "p" });
+          }
+          if (!attacksOnly) {
+            const one = square(file, rank + dir);
+            const two = square(file, rank + dir * 2);
+            if (one && !board.get(one)) add(one, { promotion: Number(one[1]) === promoteRank });
+            if (rank === startRank && one && two && !board.get(one) && !board.get(two)) add(two, { doublePawn: true });
+          }
+        }
+
+        if (piece.type === "n") {
+          [[1, 2], [2, 1], [2, -1], [1, -2], [-1, -2], [-2, -1], [-2, 1], [-1, 2]].forEach(([df, dr]) => add(square(file + df, rank + dr)));
+        }
+
+        if (piece.type === "b" || piece.type === "q") {
+          [[1, 1], [1, -1], [-1, 1], [-1, -1]].forEach(([df, dr]) => ray(df, dr));
+        }
+
+        if (piece.type === "r" || piece.type === "q") {
+          [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(([df, dr]) => ray(df, dr));
+        }
+
+        if (piece.type === "k") {
+          [[1, 1], [1, 0], [1, -1], [0, 1], [0, -1], [-1, 1], [-1, 0], [-1, -1]].forEach(([df, dr]) => add(square(file + df, rank + dr)));
+          if (!attacksOnly && !inCheck(piece.color)) {
+            const rankHome = piece.color === "w" ? "1" : "8";
+            if (castling[piece.color].k && !board.get(`f${rankHome}`) && !board.get(`g${rankHome}`) && !attacked(`f${rankHome}`, enemy(piece.color)) && !attacked(`g${rankHome}`, enemy(piece.color))) add(`g${rankHome}`, { castle: "k" });
+            if (castling[piece.color].q && !board.get(`d${rankHome}`) && !board.get(`c${rankHome}`) && !board.get(`b${rankHome}`) && !attacked(`d${rankHome}`, enemy(piece.color)) && !attacked(`c${rankHome}`, enemy(piece.color))) add(`c${rankHome}`, { castle: "q" });
+          }
+        }
+        return moves;
+      }
+
+      function attacked(squareName, byColor) {
+        for (const [from, piece] of board) {
+          if (piece.color === byColor && moveListFor(from, true).some((move) => move.to === squareName)) return true;
+        }
+        return false;
+      }
+
+      function kingSquare(color) {
+        for (const [squareName, piece] of board) {
+          if (piece.color === color && piece.type === "k") return squareName;
+        }
+        return null;
+      }
+
+      function inCheck(color) {
+        return attacked(kingSquare(color), enemy(color));
+      }
+
+      function legalMoves(from) {
+        return moveListFor(from).filter((move) => {
+          const current = snapshot();
+          applyMove(move, false);
+          const legal = !inCheck(move.color);
+          board = current.board;
+          turn = current.turn;
+          castling = current.castling;
+          enPassant = current.enPassant;
+          history = current.history;
+          return legal;
+        });
+      }
+
+      function allLegal(color = turn) {
+        const moves = [];
+        for (const [squareName, piece] of board) {
+          if (piece.color === color) moves.push(...legalMoves(squareName));
+        }
+        return moves;
+      }
+
+      function applyMove(move, record = true) {
+        const piece = board.get(move.from);
+        const previousEnPassant = enPassant;
+        const capturedPiece = move.enPassant ? board.get(`${move.to[0]}${move.from[1]}`) : board.get(move.to);
+        if (record) snapshots.push(snapshot());
+        board.delete(move.from);
+        if (move.enPassant) board.delete(`${move.to[0]}${move.from[1]}`);
+        board.set(move.to, { color: piece.color, type: move.promotion ? "q" : piece.type });
+        if (move.castle) {
+          const rankHome = piece.color === "w" ? "1" : "8";
+          if (move.castle === "k") {
+            board.set(`f${rankHome}`, board.get(`h${rankHome}`));
+            board.delete(`h${rankHome}`);
+          } else {
+            board.set(`d${rankHome}`, board.get(`a${rankHome}`));
+            board.delete(`a${rankHome}`);
+          }
+        }
+        enPassant = move.doublePawn ? `${move.from[0]}${(Number(move.from[1]) + Number(move.to[1])) / 2}` : null;
+        updateCastling(move, piece, capturedPiece);
+        if (record) {
+          const notation = notationFor(move, capturedPiece, previousEnPassant);
+          history.push({ ...move, captured: capturedPiece ? `${capturedPiece.color}${capturedPiece.type}` : null, notation });
+          turn = enemy(turn);
+          render(notation);
+          maybeComputerMove();
+          return;
+        }
+        turn = enemy(turn);
+      }
+
+      function updateCastling(move, piece, capturedPiece) {
+        if (piece.type === "k") castling[piece.color] = { k: false, q: false };
+        if (piece.type === "r") {
+          if (move.from === "h1") castling.w.k = false;
+          if (move.from === "a1") castling.w.q = false;
+          if (move.from === "h8") castling.b.k = false;
+          if (move.from === "a8") castling.b.q = false;
+        }
+        if (capturedPiece?.type === "r") {
+          if (move.to === "h1") castling.w.k = false;
+          if (move.to === "a1") castling.w.q = false;
+          if (move.to === "h8") castling.b.k = false;
+          if (move.to === "a8") castling.b.q = false;
+        }
+      }
+
+      function notationFor(move, capturedPiece) {
+        if (move.castle === "k") return "O-O";
+        if (move.castle === "q") return "O-O-O";
+        const pieceName = names[move.piece];
+        const takes = capturedPiece || move.enPassant ? "x" : "";
+        const pawnFile = move.piece === "p" && takes ? move.from[0] : "";
+        const promotion = move.promotion ? "=Q" : "";
+        return `${pieceName}${pawnFile}${takes}${move.to}${promotion}`;
+      }
+
+      function statusText() {
+        const moves = allLegal(turn);
+        const checked = inCheck(turn);
+        if (!moves.length && checked) return `${turn === "w" ? "Black" : "White"} wins by checkmate`;
+        if (!moves.length) return "Draw by stalemate";
+        const side = turn === "w" ? "White" : "Black";
+        if (isComputerTurn()) return `${side} computer thinking${checked ? ", in check" : ""}`;
+        return `${side} to move${checked ? ", in check" : ""}`;
+      }
+
+      function isComputerTurn() {
+        return playerSide !== "both" && turn !== playerSide;
+      }
+
+      function maybeComputerMove() {
+        if (!isComputerTurn() || computerThinking || !allLegal(turn).length) return;
+        computerThinking = true;
+        render("Computer is choosing a move.");
+        window.setTimeout(() => {
+          const move = chooseComputerMove();
+          computerThinking = false;
+          if (move) applyMove(move);
+        }, 350);
+      }
+
+      function chooseComputerMove() {
+        const moves = allLegal(turn);
+        if (!moves.length) return null;
+        let bestScore = -Infinity;
+        let bestMoves = [];
+        for (const move of moves) {
+          const score = scoreMove(move);
+          if (score > bestScore) {
+            bestScore = score;
+            bestMoves = [move];
+          } else if (score === bestScore) {
+            bestMoves.push(move);
+          }
+        }
+        return bestMoves[Math.floor(Math.random() * bestMoves.length)];
+      }
+
+      function scoreMove(move) {
+        const current = snapshot();
+        const capturedPiece = move.enPassant ? board.get(`${move.to[0]}${move.from[1]}`) : board.get(move.to);
+        let score = Math.random() * 10;
+        if (capturedPiece) score += pieceValues[capturedPiece.type] - pieceValues[move.piece] * 0.08;
+        if (move.promotion) score += pieceValues.q;
+        if (move.castle) score += 45;
+        applyMove(move, false);
+        const replyMoves = allLegal(turn);
+        if (inCheck(turn)) score += 55;
+        if (!replyMoves.length && inCheck(turn)) score += 100000;
+        if (!replyMoves.length && !inCheck(turn)) score -= 300;
+        const destination = move.to;
+        board = current.board;
+        turn = current.turn;
+        castling = current.castling;
+        enPassant = current.enPassant;
+        history = current.history;
+        if (attacked(destination, enemy(turn))) score -= pieceValues[move.piece] * 0.45;
+        return score;
+      }
+
+      function render(message = "") {
+        boardEl.innerHTML = "";
+        const ranks = flipped ? [1, 2, 3, 4, 5, 6, 7, 8] : [8, 7, 6, 5, 4, 3, 2, 1];
+        const displayFiles = flipped ? [...files].reverse() : files;
+        const targets = selected ? legalMoves(selected).map((move) => move.to) : [];
+
+        for (const rank of ranks) {
+          for (const file of displayFiles) {
+            const squareName = `${file}${rank}`;
+            const piece = board.get(squareName);
+            const squareEl = document.createElement("button");
+            const isLight = (files.indexOf(file) + rank) % 2 === 1;
+            squareEl.className = `square ${isLight ? "light" : "dark"}${selected === squareName ? " selected" : ""}${targets.includes(squareName) ? " target" : ""}`;
+            squareEl.type = "button";
+            squareEl.setAttribute("role", "gridcell");
+            squareEl.setAttribute("aria-label", piece ? `${piece.color === "w" ? "White" : "Black"} ${piece.type} on ${squareName}` : squareName);
+            squareEl.addEventListener("click", () => clickSquare(squareName));
+            squareEl.innerHTML = `<span class="piece ${piece?.color === "b" ? "black-piece" : "white-piece"}">${piece ? glyphs[`${piece.color}${piece.type}`] : ""}</span><span class="coord">${squareName}</span>`;
+            boardEl.append(squareEl);
+          }
+        }
+
+        statusEl.textContent = statusText();
+        messageEl.textContent = message || "Pick a piece with a legal move.";
+        renderCaptured();
+        renderHistory();
+      }
+
+      function clickSquare(squareName) {
+        if (computerThinking || isComputerTurn()) {
+          render("Wait for the computer move.");
+          return;
+        }
+        const piece = board.get(squareName);
+        if (selected) {
+          const move = legalMoves(selected).find((candidate) => candidate.to === squareName);
+          if (move) {
+            applyMove(move);
+            selected = null;
+            return;
+          }
+        }
+        if (piece && piece.color === turn) {
+          selected = squareName;
+          render(`${piece.color === "w" ? "White" : "Black"} ${piece.type.toUpperCase()} selected.`);
+          return;
+        }
+        selected = null;
+        render("Pick a piece with a legal move.");
+      }
+
+      function renderCaptured() {
+        const captured = history.filter((move) => move.captured).map((move) => move.captured);
+        capturedEl.innerHTML = captured.length ? captured.map((piece) => `<span>${glyphs[piece]}</span>`).join("") : '<span class="empty">No captures</span>';
+      }
+
+      function renderHistory() {
+        moveListEl.innerHTML = history.map((move, index) => `<li><span>${Math.floor(index / 2) + 1}${index % 2 === 0 ? "." : "..."}</span><strong>${move.notation}</strong></li>`).join("");
+        moveListEl.scrollTop = moveListEl.scrollHeight;
+      }
+
+      document.querySelector("#new-game").addEventListener("click", startPosition);
+      document.querySelector("#undo").addEventListener("click", () => {
+        if (computerThinking) return;
+        let previous = snapshots.pop();
+        if (playerSide !== "both" && previous && previous.turn !== playerSide && snapshots.length) previous = snapshots.pop();
+        if (previous) restore(previous);
+      });
+      document.querySelector("#flip").addEventListener("click", () => {
+        flipped = !flipped;
+        render("Board flipped.");
+      });
+      sideSelectEl.addEventListener("change", () => {
+        playerSide = sideSelectEl.value;
+        flipped = playerSide === "b";
+        startPosition();
+      });
+
+      startPosition();
+    </script>
+  </body>
+</html>
